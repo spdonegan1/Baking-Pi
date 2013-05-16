@@ -2,38 +2,59 @@
 .globl _start
 _start:
 
-/* load the GPIO region address into r0 */
-ldr r0, =0x20200000
+b main
+.section .text
 
-mov r1, #1
-lsl r1, #18
+main:
 
-str r1, [r0,#4]
+  /* Set the stack point to 0x8000 */
+  mov sp,#0x8000
 
-lsr r1, #2
+  /* setup the pin for the OK LED */
+  pinNum .req r0
+  pinFunc .req r1
+  mov pinNum,#16
+  mov pinFunc,#1
+  bl SetGpioFunction
+  .unreq pinNum
+  .unreq pinFunc
 
-loop$: 
+  loop$:
 
-    /* turn on led */
-    str r1,[r0,#40]
+    /* turn on LED */
+    pinNum .req r0
+    pinVal .req r1
+    mov pinNum,#16
+    mov pinVal,#0
+    bl SetGpio
+    .unreq pinNum
+    .unreq pinVal
 
-    /* set delay for timer */
-    mov r2,#0x3F0000
+    /* delay */
+    decr .req r0
+    mov decr,#0x3F0000
+    wait1$: 
+      sub decr,#1
+      teq decr,#0
+      bne wait1$
+    .unreq decr
 
-    wait1$:
-        sub r2,#1
-        cmp r2,#0
-        bne wait1$
+    /* turn off LED */
+    pinNum .req r0
+    pinVal .req r1
+    mov pinNum,#16
+    mov pinVal,#1
+    bl SetGpio
+    .unreq pinNum
+    .unreq pinVal
 
-    /* turn off led */
-    str r1,[r0,#28]
-
-    /* reset timer delay */
-    mov r2,#0x3F0000
-
+    /* delay */
+    decr .req r0
+    mov decr,#0x3F0000
     wait2$:
-        sub r2,#1
-        cmp r2,#0
-        bne wait2$
+      sub decr,#1
+      teq decr,#0
+      bne wait2$
+    .unreq decr
 
-b loop$
+  b loop$
